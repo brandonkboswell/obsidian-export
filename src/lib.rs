@@ -14,6 +14,7 @@ pub use context::Context;
 pub use frontmatter::{Frontmatter, FrontmatterStrategy};
 pub use walker::{vault_contents, WalkOptions};
 
+use serde_yaml::Value;
 use frontmatter::{frontmatter_from_str, frontmatter_to_str};
 use pathdiff::diff_paths;
 use percent_encoding::{utf8_percent_encode, AsciiSet, CONTROLS};
@@ -461,8 +462,22 @@ impl<'a> Exporter<'a> {
         let content = fs::read_to_string(&path).context(ReadError { path })?;
         let (frontmatter, content) =
             matter::matter(&content).unwrap_or(("".to_string(), content.to_string()));
-        let frontmatter =
+        let mut frontmatter =
             frontmatter_from_str(&frontmatter).context(FrontMatterDecodeError { path })?;
+
+        if self.add_titles {
+          let note_name = infer_note_title_from_path(path);
+          let mut frontmatter_name = note_name.to_string();
+
+          if note_name.to_string().eq(&String::from("_index")) {
+            frontmatter_name = String::from("Home");
+          }
+
+          frontmatter.insert(
+            Value::String("title".to_string()),
+            Value::String(frontmatter_name),
+          );
+        }
 
         let mut parser_options = Options::empty();
         parser_options.insert(Options::ENABLE_TABLES);
@@ -475,15 +490,15 @@ impl<'a> Exporter<'a> {
         // Most of the time, a reference triggers 5 events: [ or ![, [, <text>, ], ]
         let mut buffer = Vec::with_capacity(5);
 
-        if self.add_titles {
-            // Ensure that each (possibly embedded) note starts with a reasonable top-level heading
-            let note_name = infer_note_title_from_path(path);
-            let h1_tag = Tag::Heading(HeadingLevel::H1, None, vec![]);
+        // if self.add_titles {
+        //     // Ensure that each (possibly embedded) note starts with a reasonable top-level heading
+        //     let note_name = infer_note_title_from_path(path);
+        //     let h1_tag = Tag::Heading(HeadingLevel::H1, None, vec![]);
 
-            events.push(Event::Start(h1_tag.clone()));
-            events.push(Event::Text(note_name));
-            events.push(Event::End(h1_tag.clone()));
-        }
+        //     events.push(Event::Start(h1_tag.clone()));
+        //     events.push(Event::Text(note_name));
+        //     events.push(Event::End(h1_tag.clone()));
+        // }
 
         for event in Parser::new_ext(&content, parser_options) {
             if ref_parser.state == RefParserState::Resetting {
