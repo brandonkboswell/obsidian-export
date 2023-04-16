@@ -1,3 +1,7 @@
+---
+title: Main note
+---
+
 # Main note
 
 # Sub note
