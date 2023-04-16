@@ -490,15 +490,15 @@ impl<'a> Exporter<'a> {
         // Most of the time, a reference triggers 5 events: [ or ![, [, <text>, ], ]
         let mut buffer = Vec::with_capacity(5);
 
-        // if self.add_titles {
-        //     // Ensure that each (possibly embedded) note starts with a reasonable top-level heading
-        //     let note_name = infer_note_title_from_path(path);
-        //     let h1_tag = Tag::Heading(HeadingLevel::H1, None, vec![]);
+        if self.add_titles {
+            // Ensure that each (possibly embedded) note starts with a reasonable top-level heading
+            let note_name = infer_note_title_from_path(path);
+            let h1_tag = Tag::Heading(HeadingLevel::H1, None, vec![]);
 
-        //     events.push(Event::Start(h1_tag.clone()));
-        //     events.push(Event::Text(note_name));
-        //     events.push(Event::End(h1_tag.clone()));
-        // }
+            events.push(Event::Start(h1_tag.clone()));
+            events.push(Event::Text(note_name));
+            events.push(Event::End(h1_tag.clone()));
+        }
 
         for event in Parser::new_ext(&content, parser_options) {
             if ref_parser.state == RefParserState::Resetting {
